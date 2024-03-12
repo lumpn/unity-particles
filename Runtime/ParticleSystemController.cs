@@ -145,6 +145,8 @@ namespace Lumpn.Particles
         }
 
         [SerializeField] private Transform root;
+        [SerializeField] private float defaultSize = 1f;
+        [SerializeField] private float defaultDuration = 1f;
 
         private ParticleSystemEntry[] particleSystems;
 
@@ -190,8 +192,11 @@ namespace Lumpn.Particles
             }
         }
 
-        public void Emit(Vector3 position, Quaternion rotation, float sizeScale = 1f, float durationScale = 1f, float delay = 0f)
+        public void Emit(Vector3 position, Quaternion rotation, float size = 1f, float duration = 1f, float delay = 0f)
         {
+            var sizeScale = size / defaultSize;
+            var durationScale = duration / defaultDuration;
+
             var time = Time.time;
             for (int i = 0; i < particleSystems.Length; i++)
             {
@@ -233,12 +238,6 @@ namespace Lumpn.Particles
             entry.fraction = ps.Emit(entry.sizeScale, entry.durationScale, relativeTime, deltaTime, entry.fraction);
 
             return entry;
-        }
-
-        [ContextMenu(nameof(DebugEmit))]
-        public void DebugEmit()
-        {
-            Emit(Vector3.zero, Quaternion.identity);
         }
     }
 }
