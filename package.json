@@ -1,0 +1,17 @@
+{
+  "name": "de.lumpn.unity-particles",
+  "version": "0.1.0",
+  "displayName": "Lumpn Particle System controller",
+  "description": "Particle System controller for Unity.",
+  "dependencies": {
+  },
+  "keywords": [
+    "lumpn",
+    "particle",
+    "particlesystem"
+  ],
+  "author": {
+    "name": "Jonas Boetel",
+    "url": "https://github.com/lumpn"
+  }
+}
