@@ -12,10 +12,10 @@ namespace Lumpn.Particles
             public Vector3 position; // [m]
             public Quaternion rotation;
             public Vector3 velocity; // [m/s]
-            public float durationScale; // [1]
-            public float lifetimeScale; // [1]
-            public float sizeScale;  // [1]
-            public float fraction;  // fractional particle not emitted in previous frame [1]
+            public float durationMultiplier; // [1]
+            public float lifetimeMultiplier; // [1]
+            public float sizeMultiplier;  // [1]
+            public float fraction;  // [1] fractional particle not emitted in previous frame
         }
 
         [SerializeField] private Transform root;
@@ -23,7 +23,7 @@ namespace Lumpn.Particles
         [SerializeField] private float defaultSize = 1f;
         [SerializeField] private float defaultLifetime = 1f;
 
-        private ParticleSystemEntry[] particleSystems;
+        private IVirtualParticleSystem[] particleSystems;
 
         private readonly List<ScheduleEntry> schedule = new List<ScheduleEntry>();
 
@@ -45,7 +45,7 @@ namespace Lumpn.Particles
                     var localTime = Mathf.Max(time - entry.startTime, 0f);
                     schedule[i] = Emit(entry, localTime, deltaTime);
                 }
-                if (time > entry.endTime)
+                if (time >= entry.endTime)
                 {
                     schedule.RemoveUnorderedAt(i);
                 }
@@ -56,29 +56,24 @@ namespace Lumpn.Particles
         {
             if (particleSystems == null)
             {
-                var ps = root.GetComponentsInChildren<ParticleSystem>(false);
-                particleSystems = new ParticleSystemEntry[ps.Length];
-
-                for (int i = 0; i < particleSystems.Length; i++)
-                {
-                    particleSystems[i] = new ParticleSystemEntry(ps[i]);
-                }
+                particleSystems = VirtualParticleSystemUtils.GenerateControllers(root);
             }
         }
 
-        public void Emit(Vector3 position, Quaternion rotation, Vector3 velocity = default, float duration = 1f, float lifetime = 1f, float size = 1f, float delay = 0f)
+        public void Emit(Vector3 position, Quaternion rotation, Vector3 velocity, float duration, float lifetime, float size, float delay)
         {
-            var durationScale = duration / defaultDuration;
-            var lifetimeScale = lifetime / defaultLifetime;
-            var sizeScale = size / defaultSize;
+            var durationMultiplier = duration / defaultDuration;
+            var lifetimeMultiplier = lifetime / defaultLifetime;
+            var sizeMultiplier = size / defaultSize;
 
             var time = Time.time;
+            var deltaTime = Time.deltaTime;
             for (int i = 0; i < particleSystems.Length; i++)
             {
                 var p = particleSystems[i];
 
-                var startDelay = delay + p.GetStartDelay(durationScale);
-                var emissionDuration = p.GetEmissionDuration(durationScale);
+                var startDelay = delay + p.GetStartDelay(durationMultiplier);
+                var emissionDuration = p.GetEmissionDuration(durationMultiplier);
                 var totalDuration = startDelay + emissionDuration;
                 var entry = new ScheduleEntry
                 {
@@ -88,9 +83,9 @@ namespace Lumpn.Particles
                     position = position,
                     rotation = rotation,
                     velocity = velocity,
-                    durationScale = durationScale,
-                    lifetimeScale = lifetimeScale,
-                    sizeScale = sizeScale,
+                    durationMultiplier = durationMultiplier,
+                    lifetimeMultiplier = lifetimeMultiplier,
+                    sizeMultiplier = sizeMultiplier,
                     fraction = 0f,
                 };
 
@@ -101,17 +96,15 @@ namespace Lumpn.Particles
 
                 if (startDelay <= 0f)
                 {
-                    Emit(entry, 0f, 0f);
+                    Emit(entry, 0f, deltaTime);
                 }
             }
         }
 
         private ScheduleEntry Emit(ScheduleEntry entry, float time, float deltaTime)
         {
-            root.SetLocalPositionAndRotation(entry.position, entry.rotation);
-
             var ps = particleSystems[entry.index];
-            entry.fraction = ps.Emit(entry.velocity, entry.durationScale, entry.lifetimeScale, entry.sizeScale, time, deltaTime, entry.fraction);
+            entry.fraction = ps.Emit(entry.position, entry.rotation, entry.velocity, entry.durationMultiplier, entry.lifetimeMultiplier, entry.sizeMultiplier, time, deltaTime, entry.fraction);
 
             return entry;
         }
